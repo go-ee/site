@@ -53,7 +53,7 @@ func main() {
 					Name:        "port",
 					Aliases:     []string{"p"},
 					Usage:       "port for the HTTP server",
-					Value:       8080,
+					Value:       7070,
 					Destination: &port,
 				}, &cli.StringFlag{
 					Name:        "root",
@@ -72,8 +72,12 @@ func main() {
 				http.Handle("/", http.FileServer(http.Dir(root)))
 
 				serverAddr := fmt.Sprintf("%v:%v", server, port)
+				linkHost := server
+				if linkHost == "" || linkHost == "0.0.0.0" {
+					linkHost = "127.0.0.1"
+				}
 
-				logrus.Infof("serve '%v' on 'http://%v'", root, serverAddr)
+				logrus.Infof("serve '%v' on 'http://%v:%v'", root, linkHost, port)
 				err = http.ListenAndServe(serverAddr, nil)
 
 				return
@@ -93,7 +97,7 @@ func main() {
 					Name:        "config",
 					Aliases:     []string{"c"},
 					Usage:       "EmailBridge config file",
-					Value:       "config.xml",
+					Value:       "config.yml",
 					Destination: &configFile,
 				},
 			},
@@ -105,8 +109,8 @@ func main() {
 						serverAddr := fmt.Sprintf("%v:%v", config.Server, config.Port)
 
 						linkHost := config.Server
-						if linkHost == "" {
-							linkHost = "localhost"
+						if linkHost == "" || linkHost == "0.0.0.0" {
+							linkHost = "127.0.0.1"
 						}
 
 						logrus.Infof("serve '%v' on 'http://%v:%v' with email support '%v'",
@@ -136,7 +140,7 @@ func main() {
 			Action: func(c *cli.Context) (err error) {
 				config := emailbridge.BuildDefault()
 				config.Routes.Prefix = "_api/"
-				err = emailbridge.WriteConfig(targetFile, config)
+				err = config.WriteConfig(targetFile)
 				return
 			},
 		},
